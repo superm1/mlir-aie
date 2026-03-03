@@ -109,7 +109,7 @@ jobs:
           run: |
             # Install essential build tools first (Ubuntu 24.04 minimal image)
             apt-get update
-            apt-get install -y git cmake ninja-build build-essential wget unzip
+            apt-get install -y git cmake ninja-build build-essential wget unzip libssl-dev
 
             git config --global --add safe.directory $PWD
             MLIR_VERSION=$(git rev-parse --short HEAD)
