@@ -31,7 +31,6 @@ concurrency:
 
 env:
   DEBIAN_FRONTEND: noninteractive
-  VITIS: /opt/ryzen_ai-1.3.0/vitis_aie_essentials
   XILINXD_LICENSE_FILE: /opt/xilinx/Xilinx.lic
 
 jobs:
@@ -100,12 +99,11 @@ jobs:
         with:
           distro: none
           arch: none
-          base_image: ghcr.io/xilinx/mlir-aie/ubuntu22-ryzenai-1.3.0ea:1.2
+          base_image: ubuntu:24.04
           githubToken: ${{ github.token }}
           dockerRunArgs: |
             --mac-address 02:42:ac:11:00:02
           env: |
-            VITIS: ${{ env.VITIS }}
             XILINXD_LICENSE_FILE: ${{ env.XILINXD_LICENSE_FILE }}
             AIE_WHEEL_VERSION: ${{ (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) && github.ref_name || '""' }}
           run: |
@@ -125,10 +123,13 @@ jobs:
             python${{ matrix.python_version }} -m venv ${{ github.workspace }}/aie-venv
             source ${{ github.workspace }}/aie-venv/bin/activate
 
-            echo "Installing vitis_aie_essentials ..."
-            pushd /opt
-            tar xfz /workspace/vaie.tgz
-            popd
+            # Install XRT from AMD PPA
+            echo "Adding AMD XRT PPA and installing XRT packages..."
+            apt-get update
+            apt-get install -y software-properties-common
+            add-apt-repository -y ppa:amd-team/xrt
+            apt-get update
+            apt-get install -y libxrt-dev libxrt2 libxrt-npu2
 
             pip install --upgrade pip
             pip install -r python/requirements.txt
@@ -152,12 +153,11 @@ jobs:
             # forever when configuring. Set the time to some arbitrary stamp in the past just to be safe.
             find mlir$NO_RTTI_UNDERSCORE -exec touch -a -m -t 201108231405.14 {} \;
 
-            export PATH=$VITIS/bin:$VITIS/aietools/bin:$PATH
             export MLIR_INSTALL_ABS_PATH=$PWD/mlir$NO_RTTI_UNDERSCORE
             export MLIR_AIE_SOURCE_DIR=$PWD
             export WHEELHOUSE_DIR=$PWD/wheelhouse
             export CMAKE_MODULE_PATH=$PWD/cmake/modulesXilinx
-            export XRT_ROOT=/opt/xilinx/xrt
+            export XRT_ROOT=/usr
             if [ x"${{ inputs.AIE_COMMIT }}" == x"" ]; then
               export AIE_PROJECT_COMMIT=$MLIR_VERSION
             else

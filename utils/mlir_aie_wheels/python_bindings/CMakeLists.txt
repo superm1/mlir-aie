@@ -75,6 +75,11 @@ if(AIE_ENABLE_XRT_PYTHON_BINDINGS)
   find_library(XRT_COREUTIL xrt_coreutil HINTS ${XRT_LIB_DIR})
   add_library(xrt_coreutil SHARED IMPORTED)
   set_property(TARGET xrt_coreutil PROPERTY IMPORTED_LOCATION "${XRT_COREUTIL}")
+
+  # Find NPU-specific libraries
+  find_library(XRT_CORE xrt_core HINTS ${XRT_LIB_DIR})
+  find_library(XRT_DRIVER_XDNA xrt_driver_xdna HINTS ${XRT_LIB_DIR})
+  find_library(XDP_CORE xdp_core HINTS ${XRT_LIB_DIR})
 endif()
 
 set(_sources
@@ -131,17 +136,45 @@ if(AIE_ENABLE_XRT_PYTHON_BINDINGS)
   # for build dir (superfluous here because setup.py builds the wheel from the install dir but good for sanity checking)
   add_custom_command(
     TARGET AIEAggregateCAPI PRE_BUILD
-    COMMENT "Copying libxrt_coreutil into _mlir_libs during build"
+    COMMENT "Copying XRT libraries into _mlir_libs during build"
     DEPENDS "${XRT_COREUTIL}"
     COMMAND "${CMAKE_COMMAND}" -E copy
     "${XRT_COREUTIL}" "${CMAKE_CURRENT_BINARY_DIR}/aie/_mlir_libs/libxrt_coreutil.so"
   )
-  # for install
+
+  # Install XRT core libraries for manylinux wheel bundling
   install(FILES
     "${XRT_COREUTIL}"
     COMPONENT xrt_coreutil
     DESTINATION "${CMAKE_INSTALL_PREFIX}/aie/_mlir_libs"
-    # hack
     RENAME libxrt_coreutil.so.2
   )
+
+  # Install NPU-specific libraries if found
+  if(XRT_CORE)
+    install(FILES
+      "${XRT_CORE}"
+      COMPONENT xrt_core
+      DESTINATION "${CMAKE_INSTALL_PREFIX}/aie/_mlir_libs"
+      RENAME libxrt_core.so.2
+    )
+  endif()
+
+  if(XRT_DRIVER_XDNA)
+    install(FILES
+      "${XRT_DRIVER_XDNA}"
+      COMPONENT xrt_driver_xdna
+      DESTINATION "${CMAKE_INSTALL_PREFIX}/aie/_mlir_libs"
+      RENAME libxrt_driver_xdna.so.2
+    )
+  endif()
+
+  if(XDP_CORE)
+    install(FILES
+      "${XDP_CORE}"
+      COMPONENT xdp_core
+      DESTINATION "${CMAKE_INSTALL_PREFIX}/aie/_mlir_libs"
+      RENAME libxdp_core.so.2
+    )
+  endif()
 endif()
