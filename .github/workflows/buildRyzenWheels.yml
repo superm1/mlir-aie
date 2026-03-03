@@ -107,6 +107,10 @@ jobs:
             XILINXD_LICENSE_FILE: ${{ env.XILINXD_LICENSE_FILE }}
             AIE_WHEEL_VERSION: ${{ (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) && github.ref_name || '""' }}
           run: |
+            # Install essential build tools first (Ubuntu 24.04 minimal image)
+            apt-get update
+            apt-get install -y git cmake ninja-build build-essential wget unzip
+
             git config --global --add safe.directory $PWD
             MLIR_VERSION=$(git rev-parse --short HEAD)
             echo "Building mlir-aie version $MLIR_VERSION"
